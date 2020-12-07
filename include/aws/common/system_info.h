@@ -1,24 +1,24 @@
 #ifndef AWS_COMMON_SYSTEM_INFO_H
 #define AWS_COMMON_SYSTEM_INFO_H
 
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/common/common.h>
 
+enum aws_platform_os {
+    AWS_PLATFORM_OS_WINDOWS,
+    AWS_PLATFORM_OS_MAC,
+    AWS_PLATFORM_OS_UNIX,
+};
+
 AWS_EXTERN_C_BEGIN
+
+/* Returns the OS this was built under */
+AWS_COMMON_API
+enum aws_platform_os aws_get_platform_build_os(void);
 
 /* Returns the number of online processors available for usage. */
 AWS_COMMON_API
@@ -42,7 +42,7 @@ void aws_debug_break(void);
  * is not supported on this platform
  */
 AWS_COMMON_API
-size_t aws_backtrace(void **frames, size_t num_frames);
+size_t aws_backtrace(void **stack_frames, size_t num_frames);
 
 /*
  * Converts stack frame pointers to symbols, if symbols are available
@@ -51,7 +51,7 @@ size_t aws_backtrace(void **frames, size_t num_frames);
  * Returns NULL if the platform does not support stack frame translation
  * or an error occurs
  */
-char **aws_backtrace_symbols(void *const *frames, size_t stack_depth);
+char **aws_backtrace_symbols(void *const *stack_frames, size_t stack_depth);
 
 /*
  * Converts stack frame pointers to symbols, using all available system
@@ -63,7 +63,7 @@ char **aws_backtrace_symbols(void *const *frames, size_t stack_depth);
  * Returns NULL if the platform does not support stack frame translation
  * or an error occurs
  */
-char **aws_backtrace_addr2line(void *const *frames, size_t stack_depth);
+char **aws_backtrace_addr2line(void *const *stack_frames, size_t stack_depth);
 
 /**
  * Print a backtrace from either the current stack, or (if provided) the current exception/signal

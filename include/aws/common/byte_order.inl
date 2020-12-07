@@ -1,19 +1,9 @@
 #ifndef AWS_COMMON_BYTE_ORDER_INL
 #define AWS_COMMON_BYTE_ORDER_INL
 
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/common/byte_order.h>
@@ -52,7 +42,7 @@ AWS_STATIC_IMPL uint64_t aws_hton64(uint64_t x) {
 #elif defined(_MSC_VER)
     return _byteswap_uint64(x);
 #else
-    uint32_t low = (uint32_t)x;
+    uint32_t low = x & UINT32_MAX;
     uint32_t high = (uint32_t)(x >> 32);
     return ((uint64_t)htonl(low)) << 32 | htonl(high);
 #endif

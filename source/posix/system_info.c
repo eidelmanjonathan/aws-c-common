@@ -1,22 +1,13 @@
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/common/system_info.h>
 
 #include <aws/common/byte_buf.h>
 #include <aws/common/logging.h>
+#include <aws/common/platform.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #    define __BSD_VISIBLE 1
@@ -73,8 +64,8 @@ bool aws_is_debugger_present(void) {
 
     /* If it's not 0, then there's a debugger */
     for (const char *cur = tracer_pid + sizeof(tracerPidString) - 1; cur <= buf + num_read; ++cur) {
-        if (!isspace(*cur)) {
-            return isdigit(*cur) != 0 && *cur != '0';
+        if (!aws_isspace(*cur)) {
+            return aws_isdigit(*cur) && *cur != '0';
         }
     }
 
@@ -118,8 +109,8 @@ struct aws_stack_frame_info {
 char *s_whitelist_chars(char *path) {
     char *cur = path;
     while (*cur) {
-        bool whitelisted =
-            isalnum(*cur) || isspace(*cur) || *cur == '/' || *cur == '_' || *cur == '.' || (cur > path && *cur == '-');
+        bool whitelisted = aws_isalnum(*cur) || aws_isspace(*cur) || *cur == '/' || *cur == '_' || *cur == '.' ||
+                           (cur > path && *cur == '-');
         if (!whitelisted) {
             *cur = '_';
         }
@@ -150,7 +141,7 @@ int s_parse_symbol(const char *symbol, void *addr, struct aws_stack_frame_info *
     const char *current_exe = s_get_executable_path();
     /* parse exe/shared lib */
     const char *exe_start = strstr(symbol, " ");
-    while (isspace(*exe_start)) {
+    while (aws_isspace(*exe_start)) {
         ++exe_start;
     }
     const char *exe_end = strstr(exe_start, " ");
@@ -246,12 +237,12 @@ void s_resolve_cmd(char *cmd, size_t len, struct aws_stack_frame_info *frame) {
 }
 #    endif
 
-size_t aws_backtrace(void **frames, size_t num_frames) {
-    return backtrace(frames, num_frames);
+size_t aws_backtrace(void **stack_frames, size_t num_frames) {
+    return backtrace(stack_frames, (int)aws_min_size(num_frames, INT_MAX));
 }
 
-char **aws_backtrace_symbols(void *const *frames, size_t stack_depth) {
-    return backtrace_symbols(frames, stack_depth);
+char **aws_backtrace_symbols(void *const *stack_frames, size_t stack_depth) {
+    return backtrace_symbols(stack_frames, (int)aws_min_size(stack_depth, INT_MAX));
 }
 
 char **aws_backtrace_addr2line(void *const *stack_frames, size_t stack_depth) {
@@ -374,14 +365,14 @@ void aws_backtrace_print(FILE *fp, void *call_site_data) {
     fprintf(fp, "No call stack information available\n");
 }
 
-size_t aws_backtrace(void **frames, size_t size) {
-    (void)frames;
+size_t aws_backtrace(void **stack_frames, size_t size) {
+    (void)stack_frames;
     (void)size;
     return 0;
 }
 
-char **aws_backtrace_symbols(void *const *frames, size_t stack_depth) {
-    (void)frames;
+char **aws_backtrace_symbols(void *const *stack_frames, size_t stack_depth) {
+    (void)stack_frames;
     (void)stack_depth;
     return NULL;
 }
@@ -394,15 +385,25 @@ char **aws_backtrace_addr2line(void *const *stack_frames, size_t stack_depth) {
 #endif /* AWS_HAVE_EXECINFO */
 
 void aws_backtrace_log() {
-    void *stack[1024];
-    size_t num_frames = aws_backtrace(stack, 1024);
+    void *stack_frames[1024];
+    size_t num_frames = aws_backtrace(stack_frames, 1024);
     if (!num_frames) {
         return;
     }
-    char **symbols = aws_backtrace_addr2line(stack, num_frames);
+    char **symbols = aws_backtrace_addr2line(stack_frames, num_frames);
     for (size_t line = 0; line < num_frames; ++line) {
         const char *symbol = symbols[line];
         AWS_LOGF_TRACE(AWS_LS_COMMON_GENERAL, "%s", symbol);
     }
     free(symbols);
 }
+
+#if defined(AWS_OS_APPLE)
+enum aws_platform_os aws_get_platform_build_os(void) {
+    return AWS_PLATFORM_OS_MAC;
+}
+#else
+enum aws_platform_os aws_get_platform_build_os(void) {
+    return AWS_PLATFORM_OS_UNIX;
+}
+#endif /* AWS_OS_APPLE */

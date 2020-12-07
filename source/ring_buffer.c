@@ -1,16 +1,6 @@
-/*
- * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/common/ring_buffer.h>
@@ -20,7 +10,7 @@
 #ifdef CBMC
 #    define AWS_ATOMIC_LOAD_PTR(ring_buf, dest_ptr, atomic_ptr, memory_order)                                          \
         dest_ptr = aws_atomic_load_ptr_explicit(atomic_ptr, memory_order);                                             \
-        assert(__CPROVER_POINTER_OBJECT(dest_ptr) == __CPROVER_POINTER_OBJECT(ring_buf->allocation));                  \
+        assert(__CPROVER_same_object(dest_ptr, ring_buf->allocation));                                                 \
         assert(aws_ring_buffer_check_atomic_ptr(ring_buf, dest_ptr));
 #    define AWS_ATOMIC_STORE_PTR(ring_buf, atomic_ptr, src_ptr, memory_order)                                          \
         assert(aws_ring_buffer_check_atomic_ptr(ring_buf, src_ptr));                                                   \
@@ -242,8 +232,8 @@ static inline bool s_buf_belongs_to_pool(const struct aws_ring_buffer *ring_buff
 #ifdef CBMC
     /* only continue if buf points-into ring_buffer because comparison of pointers to different objects is undefined
      * (C11 6.5.8) */
-    if ((__CPROVER_POINTER_OBJECT(buf->buffer) != __CPROVER_POINTER_OBJECT(ring_buffer->allocation)) ||
-        (__CPROVER_POINTER_OBJECT(buf->buffer) != __CPROVER_POINTER_OBJECT(ring_buffer->allocation_end))) {
+    if (!__CPROVER_same_object(buf->buffer, ring_buffer->allocation) ||
+        !__CPROVER_same_object(buf->buffer, ring_buffer->allocation_end - 1)) {
         return false;
     }
 #endif

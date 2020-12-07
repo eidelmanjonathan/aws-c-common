@@ -1,16 +1,6 @@
-/*
- * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 #include <aws/common/system_info.h>
@@ -101,3 +91,22 @@ static int s_test_stack_trace_decoding(struct aws_allocator *allocator, void *ct
 }
 
 AWS_TEST_CASE(test_stack_trace_decoding, s_test_stack_trace_decoding);
+
+static int s_test_platform_build_os_fn(struct aws_allocator *allocator, void *ctx) {
+    (void)allocator;
+    (void)ctx;
+
+    enum aws_platform_os build_os = aws_get_platform_build_os();
+
+#if defined(AWS_OS_APPLE)
+    ASSERT_INT_EQUALS(build_os, AWS_PLATFORM_OS_MAC);
+#elif defined(_WIN32)
+    ASSERT_INT_EQUALS(build_os, AWS_PLATFORM_OS_WINDOWS);
+#else
+    ASSERT_INT_EQUALS(build_os, AWS_PLATFORM_OS_UNIX);
+#endif
+
+    return 0;
+}
+
+AWS_TEST_CASE(test_platform_build_os, s_test_platform_build_os_fn)
